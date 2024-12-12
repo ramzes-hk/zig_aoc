@@ -4,5 +4,5 @@
 const std = @import("std");
 
 pub fn main() !void {
-    _ = try @import("./q3.zig").d3_q2();
+    _ = try @import("./d4.zig").d4_q2();
 }
