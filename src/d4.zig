@@ -21,7 +21,7 @@ pub fn q4() !void {
                 if (s_x < 0 or s_x > SIZE - 1) continue;
                 const s_y = y + dir[1] * 3;
                 if (s_y < 0 or s_y > SIZE - 1) continue;
-                for (0..4) |d_| {
+                for (@as(isize, 0)..4) |d_| {
                     const d: isize = @intCast(d_);
                     const n_x = x + dir[0] * d;
                     const n_y = y + dir[1] * d;
