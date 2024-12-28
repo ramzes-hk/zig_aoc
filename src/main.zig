@@ -4,5 +4,8 @@
 const std = @import("std");
 
 pub fn main() !void {
-    _ = try @import("./d9.zig").d9();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+    _ = try @import("./d9.zig").d9_q2(allocator);
 }
