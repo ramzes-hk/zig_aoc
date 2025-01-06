@@ -14,12 +14,54 @@ pub fn d11(allocator: std.mem.Allocator) !void {
     std.log.debug("d11 q1: {d}", .{sum});
 }
 
-const Number = struct {
+const Node = struct {
     val: u64,
-    digits: usize,
+    parent: *Node,
+    rchild: *Node,
+    lchild: *Node,
+    child_n: u64,
 };
 
+pub fn d11_q2(allocator: std.mem.Allocator) !void {
+    const line = try getLine(allocator);
+    defer allocator.free(line);
+    var countDigitCache = std.AutoHashMap(u64, u64).init(allocator);
+    defer countDigitCache.deinit();
+    var resultCache = std.AutoHashMap(u64, *Node).init(allocator);
+    
+    var sum: u64 = 0;
+    for (line) |n| {
+        
+    }
+}
+
+fn recursion_q2(allocator: std.mem.Allocator, n: u64, iter: u64, countDigitCache: std.AutoHashMap(u64, u64), resultCahce: std.AutoHashMap(u64, *Node)) !u64 {
+    if (iter == 75) return 1;
+    
+}
+
+
+fn cntDigits(n: u64, cache: *std.AutoHashMap(u64, u64)) !u64 {
+    if (cache.get(n)) |val| {
+        return val;
+    }
+    inline for (1..18) |i| {
+        const ref = std.math.pow(u64, 10, i);
+        if (n < ref) {
+            try cache.put(n, i);
+            return i;
+        }
+    }
+    return 0;
+}
+
 fn countDigits(allocator: std.mem.Allocator, n: u64, cache: *std.AutoHashMap(u64, u64)) !u64 {
+    inline for (1..18) |i| {
+        const ref = std.math.pow(u64, 10, i);
+        if (n < ref) {
+            return i;
+        }
+    }
     const res = try cache.getOrPut(n);
     if (res.found_existing) {
         return res.value_ptr.*;
