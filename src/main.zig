@@ -7,5 +7,5 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
-    _ = try @import("./d13.zig").d13_q2(allocator);
+    _ = try @import("./d14.zig").d14_q2(allocator);
 }
