@@ -23,6 +23,73 @@ pub fn d16(allocator: std.mem.Allocator) !void {
     std.log.debug("d16 q1: {d}", .{res});
 }
 
+pub fn d16_q2(allocator: std.mem.Allocator) !void {
+    const map_ = try readMap(allocator);
+    const map = map_.map;
+    const start = map_.start;
+    defer {
+        for (map_.map) |line| {
+            allocator.free(line);
+        }
+        allocator.free(map_.map);
+    }
+    var visited = std.AutoHashMap(usize, i64).init(allocator);
+    defer visited.deinit();
+    _ = try recursion_q2(allocator, start[0], start[1], 0, map, 0, &visited);
+    var res: u64 = 1;
+    for (map) |line| {
+        for (line) |c| {
+            if (c == PATH) res += 1;
+        }
+    }
+    printMap(map);
+    std.log.debug("d16 q2: {d}", .{res});
+}
+
+const TARGET = 0; // q1 result
+const BORDER = '#';
+const END = 'E';
+const PATH = 'Q';
+const SENTINEL = std.math.maxInt(i64);
+
+fn recursion_q2(allocator: std.mem.Allocator, x: usize, y: usize, dir: usize, noalias map: [][]u8, w: i64, noalias visited: *std.AutoHashMap(usize, i64)) !i64 {
+    if (map[y][x] == BORDER) return SENTINEL;
+    if (map[y][x] == END) {
+        return w;
+    }
+    const key = x * 1000 + y;
+    if (visited.get(key)) |val| {
+        if (val > w) try visited.put(key, w);
+        if (val + 2000 < w) return SENTINEL; // this is so hacky bruh
+    } else try visited.put(key, w);
+    if (w > TARGET) return SENTINEL;
+    var res: [4]i64 = .{SENTINEL} ** 4;
+    for (directions, 0..) |d, idx| {
+        const diff = absDiff(idx, dir);
+        const next_x = addPos(x, d[0]);
+        const next_y = addPos(y, d[1]);
+        if (map[next_y][next_x] == '#') continue;
+        res[idx] = try recursion_q2(allocator, next_x, next_y, idx, map, w + 1 + 1000 * diff, visited);
+    }
+    var m: i64 = SENTINEL;
+    for (res) |n| {
+        if (n == TARGET) {
+            map[y][x] = PATH;
+        }
+        m = @min(m, n);
+    }
+    return m;
+}
+
+fn printMap(noalias map: [][]u8) void {
+    for (map) |line| {
+        for (line) |c| {
+            std.debug.print("{c}", .{c});
+        }
+        std.debug.print("\n", .{});
+    }
+}
+
 fn addPos(origin: usize, diff: isize) usize {
     return @as(usize, @intCast(@as(isize, @intCast(origin)) + diff));
 }
@@ -43,25 +110,16 @@ test "absDiff" {
     try std.testing.expect(absDiff(0, 0) == 0);
 }
 
-const sentinel = std.math.maxInt(i64);
-
-fn sliceContains(slice: []usize, val: usize) bool {
-    for (slice) |n| {
-        if (val == n) return true;
-    }
-    return false;
-}
-
 fn recursion(allocator: std.mem.Allocator, x: usize, y: usize, dir: usize, noalias map: [][]u8, w: i64, noalias visited: *std.AutoHashMap(usize, i64)) !i64 {
-    if (map[y][x] == '#') return sentinel;
+    if (map[y][x] == '#') return SENTINEL;
     if (map[y][x] == 'E') {
         return w;
     }
     if (visited.get(x * 1000 + y)) |val| {
-        if (val < w) return sentinel;
+        if (val < w) return SENTINEL;
     }
     try visited.put(x * 1000 + y, w);
-    var res: [4]i64 = .{sentinel} ** 4;
+    var res: [4]i64 = .{SENTINEL} ** 4;
     for (directions, 0..) |d, idx| {
         const diff = absDiff(idx, dir);
         const next_x = addPos(x, d[0]);
@@ -69,7 +127,7 @@ fn recursion(allocator: std.mem.Allocator, x: usize, y: usize, dir: usize, noali
         if (map[next_y][next_x] == '#') continue;
         res[idx] = try recursion(allocator, next_x, next_y, idx, map, w + 1 + 1000 * diff, visited);
     }
-    var m: i64 = sentinel;
+    var m: i64 = SENTINEL;
     for (res) |n| {
         m = @min(m, n);
     }
