@@ -54,6 +54,48 @@ pub fn d18(allocator: std.mem.Allocator) !void {
     std.log.debug("d18 q1: {d}", .{res});
 }
 
+pub fn d18_q2(allocator: std.mem.Allocator) !void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const arena_allocator = arena.allocator();
+    const bytes = try readBytes(allocator);
+    defer bytes.deinit();
+    var map: [SIZE][SIZE]u8 = .{.{0} ** SIZE} ** SIZE;
+    genMap(&map, bytes);
+    const queue_type = std.DoublyLinkedList(Point);
+    var res: [2]usize = undefined;
+    for (bytes.items[N + 1 ..], N + 1..) |obst, idx| {
+        map[obst[1]][obst[0]] = 1;
+        var visited = std.AutoHashMap(usize, void).init(allocator);
+        defer visited.deinit();
+        var queue = queue_type{};
+        const initial = try arena_allocator.create(queue_type.Node);
+        initial.data = .{ .x = START[0], .y = START[1], .d = 0 };
+        queue.append(initial);
+        while (queue.len > 0) {
+            const current = queue.popFirst().?;
+            if (current.data.x == END[0] and current.data.y == END[1]) break;
+            for (directions) |dir| {
+                const next_x = addPos(current.data.x, dir[0]);
+                const next_y = addPos(current.data.y, dir[1]);
+                if (next_x >= SIZE or next_x < 0 or next_y >= SIZE or next_y < 0) continue;
+                if (map[@intCast(next_y)][@intCast(next_x)] == 1) continue;
+                if (visited.contains(@intCast(next_x * 100 + next_y))) continue;
+                try visited.put(@intCast(next_x * 100 + next_y), {});
+                const node = try arena_allocator.create(queue_type.Node);
+                node.data = .{ .x = @intCast(next_x), .y = @intCast(next_y), .d = current.data.d + 1 };
+                queue.append(node);
+            }
+        }
+        if (!visited.contains(END[0] * 100 + END[1])) {
+            std.log.debug("{d}", .{idx});
+            res = bytes.items[idx];
+            break;
+        }
+    }
+    std.log.debug("d18 q2: {d}", .{res});
+}
+
 fn addPos(origin: usize, diff: isize) isize {
     return @as(isize, @intCast(origin)) + diff;
 }
