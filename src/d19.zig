@@ -33,6 +33,48 @@ fn recurse(pattern: []const u8, node: *const Node, pos: usize, head: *const Node
     return false;
 }
 
+pub fn d19_q2(allocator: std.mem.Allocator) !void {
+    const towelPattern = try getTowels(allocator);
+    const towels = towelPattern.towels;
+    const patterns = towelPattern.patterns;
+    var memo = std.StringHashMap(u64).init(allocator);
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    const arena_alloc = arena.allocator();
+    defer {
+        arena.deinit();
+        memo.deinit();
+        @constCast(&towels).deinit(allocator);
+        for (patterns.items) |item| {
+            allocator.free(item);
+        }
+        patterns.deinit();
+    }
+    var res: u64 = 0;
+    for (patterns.items) |item| {
+        res += try recurse_q2(arena_alloc, item, &towels, 0, &towels, &memo);
+        memo.clearAndFree();
+    }
+    std.log.debug("d19 q2: {d}", .{res});
+}
+
+fn recurse_q2(allocator: std.mem.Allocator, pattern: []const u8, noalias node: *const Node, pos: usize, noalias head: *const Node, noalias memo: *std.StringHashMap(u64)) !u64 {
+    if (pos == pattern.len) {
+        return if (node.value) 1 else 0;
+    }
+    const key = try std.fmt.allocPrint(allocator, "{d}:{*}", .{ pos, node });
+    if (memo.get(key)) |val| return val;
+    const idx = getIndex(pattern[pos]);
+    var sum: u64 = 0;
+    if (node.children[idx]) |val| {
+        if (val.value) {
+            sum += try recurse_q2(allocator, pattern, head, pos + 1, head, memo);
+        }
+        sum += try recurse_q2(allocator, pattern, val, pos + 1, head, memo);
+    }
+    try memo.put(key, sum);
+    return sum;
+}
+
 const Letter = enum(usize) {
     w,
     u,
@@ -125,7 +167,7 @@ fn getTowels(allocator: std.mem.Allocator) !TowelPatterns {
     defer allocator.free(firstLine);
     var tokens = std.mem.tokenizeAny(u8, firstLine, " ,");
     while (tokens.next()) |token| {
-        if (!filterW(token)) continue;
+        // if (!filterW(token)) continue;
         try insertNode(allocator, &towels, token);
     }
     while (try file.reader().readUntilDelimiterOrEofAlloc(allocator, '\n', std.math.maxInt(usize))) |line| {
